@@ -1,0 +1,123 @@
+"use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const fs_1 = __importDefault(require("fs"));
+const http_1 = __importDefault(require("http"));
+// Function to parse LRC formatted lyrics into LyricLine array
+const parseLRC = (lrcContent) => {
+    const lines = lrcContent.split('\n');
+    const lyricLines = [];
+    const timeRegex = /\[(\d{2}):(\d{2}\.\d{2})\]/;
+    for (const line of lines) {
+        const match = line.match(timeRegex);
+        if (match) {
+            const minutes = parseInt(match[1], 10);
+            const seconds = parseFloat(match[2]);
+            const timeInSeconds = minutes * 60 + seconds;
+            const text = line.replace(timeRegex, '').trim();
+            lyricLines.push({ time: timeInSeconds, text });
+        }
+    }
+    return lyricLines;
+};
+// Function to find the current lyric index based on position in seconds
+const findCurrentLyricIndex = (lyrics, position) => {
+    for (let i = lyrics.length - 1; i >= 0; i--) {
+        if (position >= lyrics[i].time) {
+            return i;
+        }
+    }
+    return -1;
+};
+// Function to clear console (for better display)
+const clearConsole = () => {
+    // Commented out to avoid clearing console and losing logs
+    process.stdout.write('\x1Bc');
+};
+// Function to fetch current position from HTTP API
+const fetchPosition = () => {
+    return new Promise((resolve, reject) => {
+        http_1.default.get('http://localhost:8080/position', (res) => {
+            let data = '';
+            res.on('data', (chunk) => {
+                data += chunk;
+            });
+            res.on('end', () => {
+                try {
+                    const json = JSON.parse(data);
+                    const posStr = json.position;
+                    console.log('Raw position string:', posStr); // Debug log
+                    let posSeconds = 0;
+                    if (posStr.includes(':')) {
+                        // Parse mm:ss format
+                        const posParts = posStr.split(':');
+                        if (posParts.length === 2) {
+                            const minutes = parseInt(posParts[0], 10);
+                            const seconds = parseFloat(posParts[1]);
+                            posSeconds = minutes * 60 + seconds;
+                        }
+                        else {
+                            posSeconds = 0;
+                        }
+                    }
+                    else {
+                        posSeconds = parseFloat(posStr);
+                    }
+                    console.log('Parsed position in seconds:', posSeconds); // Debug log
+                    resolve(posSeconds);
+                }
+                catch (error) {
+                    reject(error);
+                }
+            });
+        }).on('error', (err) => {
+            reject(err);
+        });
+    });
+};
+// Main function to read files, parse, and display synced lyrics continuously
+const displaySyncedLyrics = () => {
+    try {
+        const lrcContent = fs_1.default.readFileSync('output.lrc', 'utf8');
+        const lyrics = parseLRC(lrcContent);
+        const updateDisplay = () => __awaiter(void 0, void 0, void 0, function* () {
+            try {
+                const position = yield fetchPosition();
+                console.log('Fetched position:', position); // Debug log
+                const currentIndex = findCurrentLyricIndex(lyrics, position);
+                console.log('Current lyric index:', currentIndex); // Debug log
+                clearConsole();
+                console.log('Lyrics synced to position:', position, 'seconds');
+                if (currentIndex >= 0 && currentIndex < lyrics.length) {
+                    console.log('> ' + lyrics[currentIndex].text); // Display only current line
+                }
+                else {
+                    console.log('No lyric line found for current position.');
+                }
+            }
+            catch (error) {
+                console.error('Error fetching position:', error);
+            }
+        });
+        // Initial display
+        updateDisplay();
+        // Update every second
+        setInterval(updateDisplay, 1000);
+    }
+    catch (error) {
+        console.error('Error reading or processing output.lrc:', error);
+    }
+};
+// Run the display function
+displaySyncedLyrics();
