@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Lyrics Display</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    background: #222;
+    color: #eee;
+  }
+  #lyrics {
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.5;
+  }
+  .line {
+    padding: 5px 0;
+  }
+  .current {
+    color: #ff4081;
+    font-weight: bold;
+    font-size: 1.2em;
+  
+  }
+  h1 {
+    text-align: center;
+    color: #ff4081;
+  }
+</style>
+</head>
+<body>
+<h1>Lyrics Display</h1>
+<div id="lyrics">Loading lyrics...</div>
+
+<script>
+  let lyrics = [];
+  let currentIndex = -1;
+
+  async function fetchLyrics() {
+    const res = await fetch('/lyrics');
+    lyrics = await res.json();
+    renderLyrics();
+  }
+
+  async function fetchPosition() {
+    try {
+      const res = await fetch('/position');
+      const data = await res.json();
+      return data.position;
+    } catch {
+      return null;
+    }
+  }
+
+  function parsePosition(posStr) {
+    if (!posStr) return 0;
+    if (posStr.includes(':')) {
+      const parts = posStr.split(':');
+      if (parts.length === 2) {
+        const minutes = parseInt(parts[0], 10);
+        const seconds = parseFloat(parts[1]);
+        return minutes * 60 + seconds;
+      }
+    }
+    return parseFloat(posStr) || 0;
+  }
+
+  function renderLyrics() {
+    const container = document.getElementById('lyrics');
+    container.innerHTML = lyrics.map((line, i) => {
+      return `<div class="line" id="line-${i}">${line.text}</div>`;
+    }).join('');
+  }
+
+  async function updateCurrentLine() {
+    const posStr = await fetchPosition();
+    const position = parsePosition(posStr);
+    let newIndex = -1;
+    for (let i = lyrics.length - 1; i >= 0; i--) {
+      if (position >= lyrics[i].time) {
+        newIndex = i;
+        break;
+      }
+    }
+    if (newIndex !== currentIndex) {
+      if (currentIndex >= 0) {
+        const prevLine = document.getElementById(`line-${currentIndex}`);
+        if (prevLine) prevLine.classList.remove('current');
+      }
+      if (newIndex >= 0) {
+        const currLine = document.getElementById(`line-${newIndex}`);
+        if (currLine) currLine.classList.add('current');
+        currLine?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      currentIndex = newIndex;
+    }
+  }
+
+  async function start() {
+    await fetchLyrics();
+    setInterval(updateCurrentLine, 1000);
+  }
+
+  start();
+</script>
+</body>
+</html>
