@@ -12,6 +12,7 @@
     background: transparent;
     color: #eee;
     text-align: center;
+    font-style: italic;
   }
 @font-face {
   font-family: 'coolvetica';
@@ -31,15 +32,46 @@
     opacity: 1;
     transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
   }
+  .fade-up {
+    animation: fadeUp 0.5s ease forwards;
+  }
+  .fade-in {
+    animation: fadeIn 0.4s ease forwards;
+  }
+  .fade-out {
+    animation: fadeOut 0.4s ease backwards;
+  }
+  @keyframes fadeUp {
+    0% {
+      opacity: 0;
+      transform: translateY(5px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes fadeIn {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+  @keyframes fadeOut {
+    100% {
+      opacity: 1;
+    }
+    0% {
+      opacity: 0;
+    }
+  }
   .current {
     color: #A9D8B7;
     font-size: 1em;
     opacity: 1;
     transform: scale(1.1);
-  }
-  h1 {
-    text-align: center;
-    color: #ff4081;
   }
 </style>
 </head>
@@ -102,14 +134,26 @@
 
   function renderLyrics() {
     const container = document.getElementById('lyrics');
-    // Show only 3 lines: previous, current, next
-    const start = Math.max(0, currentIndex - 1);
-    const end = Math.min(lyrics.length - 1, currentIndex + 1);
-    const visibleLines = [];
-    for (let i = start; i <= end; i++) {
-      visibleLines.push(`<div class="line${i === currentIndex ? ' current' : ''}" id="line-${i}">${lyrics[i].text}</div>`);
+    // Show 3 lines: previous, current, next with fade animations
+    if (currentIndex >= 0 && currentIndex < lyrics.length) {
+      const start = Math.max(0, currentIndex - 1);
+      const end = Math.min(lyrics.length - 1, currentIndex + 1);
+      const visibleLines = [];
+      for (let i = start; i <= end; i++) {
+        let animationClass = '';
+        if (i === currentIndex) {
+          animationClass = 'current fade-up';
+        } else if (i === currentIndex - 1) {
+          animationClass = 'fade-out';
+        } else if (i === currentIndex + 1) {
+          animationClass = 'fade-in';
+        }
+        visibleLines.push(`<div class="line ${animationClass}" id="line-${i}">${lyrics[i].text}</div>`);
+      }
+      container.innerHTML = visibleLines.join('');
+    } else {
+      container.innerHTML = 'Loading lyrics...';
     }
-    container.innerHTML = visibleLines.join('');
   }
 
   function easeInOutQuad(t) {
@@ -136,34 +180,32 @@
   async function updateCurrentLine() {
     const posStr = await fetchPosition();
     const position = parsePosition(posStr);
+    console.log('Current position:', position);
     let newIndex = -1;
-    for (let i = lyrics.length - 1; i >= 0; i--) {
-      if (position >= lyrics[i].time) {
-        newIndex = i;
+    for (let i = 0; i < lyrics.length; i++) {
+      if (position < lyrics[i].time) {
+        newIndex = i - 1;
         break;
       }
+    }
+    if (newIndex === -1) {
+      newIndex = lyrics.length - 1;
     }
     if (newIndex !== currentIndex) {
       currentIndex = newIndex;
       renderLyrics();
-      // Scroll the middle line into view with ease-in-out animation
-      const container = document.getElementById('lyrics');
-      const currLine = document.getElementById(`line-${currentIndex}`);
-      if (currLine && container) {
-        const targetScrollTop = currLine.offsetTop - container.clientHeight / 2 + currLine.clientHeight / 2;
-        smoothScrollTo(container, targetScrollTop, 600);
-      }
+      // No scrolling needed since only one line is shown
     }
   }
 
   // Periodically refresh lyrics every 10 seconds to catch updates in output.lrc
   setInterval(() => {
     fetchLyrics();
-  }, 10000);
+  }, 100000);
 
   async function start() {
     await fetchLyrics();
-    setInterval(updateCurrentLine, 1000);
+    setInterval(updateCurrentLine, 100);
   }
 
   start();

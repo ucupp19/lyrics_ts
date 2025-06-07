@@ -1,0 +1,137 @@
+let fadeOutTriggered = false;
+
+  async function fetchLyrics() {
+    const res = await fetch('/lyrics');
+    lyrics = await res.json();
+    renderLyrics();
+  }
+=======
+  let currentIndex = -1;
+  let fadeOutTriggered = false;
+  let initialRenderDone = false;
+
+  async function fetchLyrics() {
+    const res = await fetch('/lyrics');
+    lyrics = await res.json();
+    renderLyrics();
+  }
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+  async function updateCurrentLine() {
+    const posStr = await fetchPosition();
+    const position = parsePosition(posStr);
+    console.log('Current position:', position);
+    let newIndex = -1;
+    for (let i = 0; i < lyrics.length; i++) {
+      if (position < lyrics[i].time) {
+        newIndex = i - 1;
+        break;
+      }
+    }
+    if (newIndex === -1) {
+      newIndex = lyrics.length - 1;
+    }
+
+    // Trigger fade-out animation slightly before the next line time
+    if (newIndex + 1 < lyrics.length) {
+      const nextLineTime = lyrics[newIndex + 1].time;
+      if (position >= nextLineTime - 0.5 && !fadeOutTriggered) { // 0.5 seconds before
+        fadeOutTriggered = true;
+        renderLyrics(true); // pass flag to trigger fade-out
+        return;
+      }
+    }
+    fadeOutTriggered = false;
+
+    if (newIndex !== currentIndex) {
+      currentIndex = newIndex;
+      renderLyrics();
+      // No scrolling needed since only one line is shown
+    }
+  }
+=======
+  async function updateCurrentLine() {
+    const posStr = await fetchPosition();
+    const position = parsePosition(posStr);
+    console.log('Current position:', position);
+    let newIndex = -1;
+    for (let i = 0; i < lyrics.length; i++) {
+      if (position < lyrics[i].time) {
+        newIndex = i - 1;
+        break;
+      }
+    }
+    if (newIndex === -1) {
+      newIndex = lyrics.length - 1;
+    }
+
+    // Trigger fade-out animation slightly before the next line time
+    if (newIndex + 1 < lyrics.length) {
+      const nextLineTime = lyrics[newIndex + 1].time;
+      if (position >= nextLineTime - 0.5 && !fadeOutTriggered) { // 0.5 seconds before
+        fadeOutTriggered = true;
+        renderLyrics(true); // pass flag to trigger fade-out
+        return;
+      }
+    }
+    fadeOutTriggered = false;
+
+    if (newIndex !== currentIndex) {
+      currentIndex = newIndex;
+      initialRenderDone = true;
+      renderLyrics();
+      // No scrolling needed since only one line is shown
+    }
+  }
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+  function renderLyrics(triggerFadeOut = false) {
+    const container = document.getElementById('lyrics');
+    // Show 3 lines: previous, current, next with fade animations
+    if (currentIndex >= 0 && currentIndex < lyrics.length) {
+      const start = Math.max(0, currentIndex - 1);
+      const end = Math.min(lyrics.length - 1, currentIndex + 1);
+      const visibleLines = [];
+      for (let i = start; i <= end; i++) {
+        let animationClass = '';
+        if (i === currentIndex) {
+          animationClass = 'current fade-up';
+        } else if (i === currentIndex - 1) {
+          animationClass = triggerFadeOut ? 'fade-out' : '';
+        } else if (i === currentIndex + 1) {
+          animationClass = 'fade-in';
+        }
+        visibleLines.push(`<div class="line ${animationClass}" id="line-${i}">${lyrics[i].text}</div>`);
+      }
+      container.innerHTML = visibleLines.join('');
+    } else {
+      container.innerHTML = 'Loading lyrics...';
+    }
+  }
+=======
+  function renderLyrics(triggerFadeOut = false) {
+    const container = document.getElementById('lyrics');
+    // Show 3 lines: previous, current, next with fade animations
+    if (currentIndex >= 0 && currentIndex < lyrics.length) {
+      const start = Math.max(0, currentIndex - 1);
+      const end = Math.min(lyrics.length - 1, currentIndex + 1);
+      const visibleLines = [];
+      for (let i = start; i <= end; i++) {
+        let animationClass = '';
+        if (i === currentIndex) {
+          animationClass = 'current';
+          if (initialRenderDone) animationClass += ' fade-up';
+        } else if (i === currentIndex - 1) {
+          animationClass = triggerFadeOut ? 'fade-out' : '';
+        } else if (i === currentIndex + 1) {
+          animationClass = 'fade-in';
+        }
+        visibleLines.push(`<div class="line ${animationClass}" id="line-${i}">${lyrics[i].text}</div>`);
+      }
+      container.innerHTML = visibleLines.join('');
+    } else {
+      container.innerHTML = 'Loading lyrics...';
+    }
+  }
