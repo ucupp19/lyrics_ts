@@ -44,6 +44,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const electron_1 = require("electron");
 const path = __importStar(require("path"));
+let tray = null;
+let win = null;
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -52,13 +54,14 @@ function createWindow() {
         const { width: screenWidth, height: screenHeight } = electron_1.screen.getPrimaryDisplay().workAreaSize;
         const winWidth = 800;
         const winHeight = 600;
-        const win = new electron_1.BrowserWindow({
+        win = new electron_1.BrowserWindow({
             width: winWidth,
             height: winHeight,
             x: -150,
             y: 875,
             transparent: true,
             frame: false,
+            skipTaskbar: true,
             webPreferences: {
                 preload: path.join(__dirname, 'preload.js'),
                 nodeIntegration: true,
@@ -77,11 +80,54 @@ function createWindow() {
                 yield delay(retryDelay);
             }
         }
+        win.on('close', (event) => {
+            if (win) {
+                event.preventDefault();
+                win.hide();
+            }
+        });
         // win.webContents.openDevTools(); // Uncomment to open dev tools
+    });
+}
+function createTray() {
+    tray = new electron_1.Tray(path.join(__dirname, 'trayIcon.png')); // You need to have a trayIcon.png in your build directory
+    const contextMenu = electron_1.Menu.buildFromTemplate([
+        {
+            label: 'Show',
+            click: () => {
+                if (win) {
+                    win.show();
+                }
+            }
+        },
+        {
+            label: 'Quit',
+            click: () => {
+                electron_1.app.quit();
+            }
+        }
+    ]);
+    tray.setToolTip('Lyrics Electron App');
+    tray.setContextMenu(contextMenu);
+    tray.on('click', () => {
+        if (win) {
+            if (win.isVisible()) {
+                win.hide();
+            }
+            else {
+                win.show();
+            }
+        }
+    });
+    tray.on('right-click', () => {
+        if (tray) {
+            tray.popUpContextMenu();
+        }
     });
 }
 electron_1.app.whenReady().then(() => {
     createWindow();
+    createTray();
     electron_1.app.on('activate', () => {
         if (electron_1.BrowserWindow.getAllWindows().length === 0)
             createWindow();

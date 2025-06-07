@@ -81,11 +81,13 @@
 <script>
   let lyrics = [];
   let currentIndex = -1;
+  let disableAnimation = false;
 
   async function fetchLyrics() {
     const res = await fetch('/lyrics');
     lyrics = await res.json();
     renderLyrics();
+    disableAnimation = false;
   }
 
   // WebSocket client to listen for track changes
@@ -134,7 +136,7 @@
 
   function renderLyrics() {
     const container = document.getElementById('lyrics');
-    // Show 3 lines: previous, current, next with fade animations
+    // Show 3 lines: previous, current, next with conditional animations
     if (currentIndex >= 0 && currentIndex < lyrics.length) {
       const start = Math.max(0, currentIndex - 1);
       const end = Math.min(lyrics.length - 1, currentIndex + 1);
@@ -142,11 +144,12 @@
       for (let i = start; i <= end; i++) {
         let animationClass = '';
         if (i === currentIndex) {
-          animationClass = 'current fade-up';
+          animationClass = 'current';
+          if (!disableAnimation) animationClass += ' fade-up';
         } else if (i === currentIndex - 1) {
-          animationClass = 'fade-out';
+          if (!disableAnimation) animationClass = 'fade-out';
         } else if (i === currentIndex + 1) {
-          animationClass = 'fade-in';
+          if (!disableAnimation) animationClass = 'fade-in';
         }
         visibleLines.push(`<div class="line ${animationClass}" id="line-${i}">${lyrics[i].text}</div>`);
       }
@@ -177,6 +180,10 @@
     requestAnimationFrame(animateScroll);
   }
 
+  let lastPosition = 0;
+  let fetchIntervalId = null;
+  let fetchTimeoutId = null;
+
   async function updateCurrentLine() {
     const posStr = await fetchPosition();
     const position = parsePosition(posStr);
@@ -196,12 +203,33 @@
       renderLyrics();
       // No scrolling needed since only one line is shown
     }
+
+    // Detect if position reset or changed significantly (e.g., position decreased)
+    if (position < lastPosition) {
+      disableAnimation = true;
+      // Clear any existing intervals/timeouts
+      if (fetchIntervalId) {
+        clearInterval(fetchIntervalId);
+        fetchIntervalId = null;
+      }
+      if (fetchTimeoutId) {
+        clearTimeout(fetchTimeoutId);
+        fetchTimeoutId = null;
+      }
+      // Start fetching lyrics every 100ms for 2 seconds
+      fetchIntervalId = setInterval(fetchLyrics, 100);
+      fetchTimeoutId = setTimeout(() => {
+        clearInterval(fetchIntervalId);
+        fetchIntervalId = null;
+      }, 2000);
+    }
+    lastPosition = position;
   }
 
   // Periodically refresh lyrics every 10 seconds to catch updates in output.lrc
-  setInterval(() => {
-    fetchLyrics();
-  }, 100000);
+  // setInterval(() => {
+  //   fetchLyrics();
+  // }, 100000);
 
   async function start() {
     await fetchLyrics();
