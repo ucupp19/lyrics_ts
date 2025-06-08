@@ -217,11 +217,11 @@
         fetchTimeoutId = null;
       }
       // Start fetching lyrics every 100ms for 2 seconds
-      fetchIntervalId = setInterval(fetchLyrics, 100);
+      fetchIntervalId = setInterval(fetchLyrics, 2500);
       fetchTimeoutId = setTimeout(() => {
         clearInterval(fetchIntervalId);
         fetchIntervalId = null;
-      }, 2000);
+      }, 5000);
     }
     lastPosition = position;
   }
