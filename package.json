@@ -16,6 +16,7 @@
     "start": "ts-node app.ts",
     "build": "tsc",
     "electron-start": "npm run build && electron .",
-    "start-all": "concurrently \"npm start\" \"npm run electron-start\""
+    "start-all": "concurrently \"npm run python-api\" \"npm start\" \"npm run electron-start\"",
+    "python-api": "MxLRC\\venv\\Scripts\\python.exe MxLRC\\api.py"
   }
 }

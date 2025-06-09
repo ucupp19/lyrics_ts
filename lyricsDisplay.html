@@ -36,7 +36,7 @@
     animation: fadeUp 0.5s ease forwards;
   }
   .fade-in {
-    animation: fadeIn 0.4s ease forwards;
+    animation: fadeIn 0.6s ease forwards;
   }
   .fade-out {
     animation: fadeOut 0.4s ease backwards;
@@ -71,7 +71,7 @@
     color: #A9D8B7;
     font-size: 1em;
     opacity: 1;
-    transform: scale(1.1);
+    transform: scale(1.5);
   }
 </style>
 </head>
@@ -217,11 +217,11 @@
         fetchTimeoutId = null;
       }
       // Start fetching lyrics every 100ms for 2 seconds
-      fetchIntervalId = setInterval(fetchLyrics, 2500);
+      fetchIntervalId = setInterval(fetchLyrics, 2000);
       fetchTimeoutId = setTimeout(() => {
         clearInterval(fetchIntervalId);
         fetchIntervalId = null;
-      }, 5000);
+      }, 10000);
     }
     lastPosition = position;
   }

@@ -42,6 +42,12 @@ wss.on('connection', (ws) => {
     // Remove (official video), (official music video), and (official lyric video) phrases case insensitive
     cleanedTitle = cleanedTitle.replace(/\(official( music| lyric)? video\)/i, '').trim();
 
+    // Remove (Reprise) (Official Audio) phrase case insensitive
+    cleanedTitle = cleanedTitle.replace(/\(Reprise\) \(Official Audio\)/i, '').trim();
+
+    // Remove [Official Music Video] phrase case insensitive
+    cleanedTitle = cleanedTitle.replace(/\[official music video\]/i, '').trim();
+
     // Remove extra spaces and hyphens leftover
     cleanedTitle = cleanedTitle.replace(/^\s*-\s*/, '').replace(/\s*-\s*$/, '').trim();
 
@@ -51,7 +57,7 @@ wss.on('connection', (ws) => {
     // Normalize artist_name before writing
     const normalizedArtist = normalizeArtistName(artist_name);
 
-    const content = `Title: ${cleanedTitle}\nArtist: ${normalizedArtist}\nPosition: ${position}\n`;
+    const content = `Title: ${cleanedTitle}\nArtist: ${normalizedArtist}\n`;
     fs.writeFile('lyrics.txt', content, (err) => {
       if (err) {
         console.error('Error writing to lyrics.txt:', err);
@@ -65,23 +71,36 @@ wss.on('connection', (ws) => {
   sendTrackInfo();
   writeToFile();
 
+  let writeTimeout: NodeJS.Timeout | null = null;
+
+  const debouncedWriteToFile = () => {
+    if (writeTimeout) {
+      clearTimeout(writeTimeout);
+    }
+    writeTimeout = setTimeout(() => {
+      writeToFile();
+      writeTimeout = null;
+    }, 200);
+  };
+
   ws.on('message', (message: WebSocket.Data) => {
     const msg = message.toString();
     console.log('Received from client:', msg);
 
     if (msg.startsWith('TITLE:')) {
-      track_name = msg.substring('TITLE:'.length);
-      sendTrackInfo();
-      writeToFile();
+      const newTitle = msg.substring('TITLE:'.length);
+      if (newTitle !== track_name) {
+        track_name = newTitle;
+        sendTrackInfo();
+        debouncedWriteToFile();
+      }
     } else if (msg.startsWith('ARTIST:')) {
-      artist_name = msg.substring('ARTIST:'.length);
-      sendTrackInfo();
-      writeToFile();
-    } else if (msg.startsWith('POSITION:')) {
-      position = msg.substring('POSITION:'.length);
-      currentPosition = position;
-      sendTrackInfo();
-      writeToFile();
+      const newArtist = msg.substring('ARTIST:'.length);
+      if (newArtist !== artist_name) {
+        artist_name = newArtist;
+        sendTrackInfo();
+        debouncedWriteToFile();
+      }
     }
   });
 
