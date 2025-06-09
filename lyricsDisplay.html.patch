@@ -1,0 +1,101 @@
+setInterval(() => {
+    fetchLyrics();
+  }, 100000);
+=======
+// Periodically refresh lyrics every 10 seconds to catch updates in output.lrc
+// setInterval(() => {
+//   fetchLyrics();
+// }, 100000);
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+  async function updateCurrentLine() {
+    const posStr = await fetchPosition();
+    const position = parsePosition(posStr);
+    console.log('Current position:', position);
+    let newIndex = -1;
+    for (let i = 0; i < lyrics.length; i++) {
+      if (position < lyrics[i].time) {
+        newIndex = i - 1;
+        break;
+      }
+    }
+    if (newIndex === -1) {
+      newIndex = lyrics.length - 1;
+    }
+    if (newIndex !== currentIndex) {
+      currentIndex = newIndex;
+      renderLyrics();
+      // No scrolling needed since only one line is shown
+    }
+=======
+  let lastPosition = 0;
+  let fetchIntervalId = null;
+  let fetchTimeoutId = null;
+
+  async function updateCurrentLine() {
+    const posStr = await fetchPosition();
+    const position = parsePosition(posStr);
+    console.log('Current position:', position);
+    let newIndex = -1;
+    for (let i = 0; i < lyrics.length; i++) {
+      if (position < lyrics[i].time) {
+        newIndex = i - 1;
+        break;
+      }
+    }
+    if (newIndex === -1) {
+      newIndex = lyrics.length - 1;
+    }
+    if (newIndex !== currentIndex) {
+      currentIndex = newIndex;
+      renderLyrics();
+      // No scrolling needed since only one line is shown
+    }
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+  }
+  
+  // Periodically refresh lyrics every 10 seconds to catch updates in output.lrc
+  setInterval(() => {
+    fetchLyrics();
+  }, 100000);
+
+  async function start() {
+    await fetchLyrics();
+    setInterval(updateCurrentLine, 100);
+  }
+=======
+  }
+
+    // Detect if position reset or changed significantly (e.g., position decreased)
+    if (position < lastPosition) {
+      // Clear any existing intervals/timeouts
+      if (fetchIntervalId) {
+        clearInterval(fetchIntervalId);
+        fetchIntervalId = null;
+      }
+      if (fetchTimeoutId) {
+        clearTimeout(fetchTimeoutId);
+        fetchTimeoutId = null;
+      }
+      // Start fetching lyrics every 500ms for 3 seconds
+      fetchIntervalId = setInterval(fetchLyrics, 500);
+      fetchTimeoutId = setTimeout(() => {
+        clearInterval(fetchIntervalId);
+        fetchIntervalId = null;
+      }, 3000);
+    }
+    lastPosition = position;
+  }
+  
+  // Periodically refresh lyrics every 10 seconds to catch updates in output.lrc
+  // setInterval(() => {
+  //   fetchLyrics();
+  // }, 100000);
+
+  async function start() {
+    await fetchLyrics();
+    setInterval(updateCurrentLine, 100);
+  }

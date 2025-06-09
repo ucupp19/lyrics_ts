@@ -1,0 +1,22 @@
+{
+  "main": "main.js",
+  "dependencies": {
+    "lrclib-api": "^2.0.0",
+    "ws": "^8.18.2"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3",
+    "electron": "^26.2.0",
+    "@types/electron": "^1.6.12",
+    "concurrently": "^8.2.0"
+  },
+  "scripts": {
+    "start": "ts-node app.ts",
+    "build": "tsc",
+    "electron-start": "npm run build && electron .",
+    "start-all": "concurrently \"npm run python-api\" \"npm start\" \"npm run electron-start\"",
+    "python-api": "MxLRC\\venv\\Scripts\\python.exe MxLRC\\api.py"
+  }
+}
